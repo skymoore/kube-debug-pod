@@ -1,27 +1,24 @@
-from click import command, option, STRING
+from click import STRING
+from cloup import command, option
 from subprocess import call
+from cloup.constraints import mutually_exclusive
 from . import _version
 
 default_namespace = "default"
 default_image = "debian:latest"
 default_command = "/bin/bash"
 default_pod_name = "kdb"
+arch_linux_image = "archlinux:latest"
+sky_tools_image = "skymoore/tools:latest"
 
 
-@command()
+@command(show_constraints=True)
 @option(
     "-n",
     "--namespace",
     default=default_namespace,
     type=STRING,
     help=f"Namespace to start pod in, default: {default_namespace}.",
-)
-@option(
-    "-i",
-    "--image",
-    default=default_image,
-    type=STRING,
-    help=f"Image for debug container, default: {default_image}.",
 )
 @option(
     "-c",
@@ -38,7 +35,16 @@ default_pod_name = "kdb"
     help=f"The name for the debug pod, default: {default_pod_name}.",
 )
 @option("-v", "--version", is_flag=True, help="Display version info and exit.")
-@option("-a", "--arch-linux", is_flag=True, help="Use archlinux:latest image.")
+@mutually_exclusive(
+    option("-a", "--arch-linux", is_flag=True, help=f"Use {arch_linux_image} image."),
+    option("-s", "--sky-tools", is_flag=True, help=f"Use {sky_tools_image} image."),
+    option(
+        "-i",
+        "--image",
+        type=STRING,
+        help=f"Image for debug container, default: {default_image}.",
+    ),
+)
 def kdb(
     namespace: str,
     command: str,
@@ -46,14 +52,25 @@ def kdb(
     pod_name: str,
     version: bool,
     arch_linux: bool,
+    sky_tools: bool,
 ):
 
     if version:
         print(f"kube-debug-pod {_version}")
+        print(image)
         exit(0)
 
+    # set image
     if arch_linux:
-        image = "archlinux:latest"
+        image = arch_linux_image
+
+    if sky_tools:
+        image = sky_tools_image
+
+    if image is None:
+        image = default_image
+
+    print(f"Image: {image}")
 
     # create the pod
     return_code = call(
