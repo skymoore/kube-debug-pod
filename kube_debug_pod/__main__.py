@@ -4,6 +4,7 @@ from cloup.constraints import mutually_exclusive
 from subprocess import call, Popen, PIPE
 from time import sleep
 from . import _version
+from json import dumps
 
 default_namespace = "default"
 default_image = "debian:latest"
@@ -49,6 +50,11 @@ sky_tools_image = "skymoore/tools:latest"
     type=STRING,
     help=f"Forward a port to the container, like 8000:8000.",
 )
+@option(
+    "--pvc",
+    multiple=True,
+    help="PVCs to attach to mount in the container at /opt/pvc-name.",
+)
 @option("-v", "--version", is_flag=True, help="Display version info and exit.")
 @mutually_exclusive(
     option("-a", "--arch-linux", is_flag=True, help=f"Use {arch_linux_image} image."),
@@ -67,6 +73,7 @@ def kdb(
     pod_name: str,
     timeout: str,
     port_forward: str,
+    pvc: list,
     version: bool,
     arch_linux: bool,
     sky_tools: bool,
@@ -117,9 +124,53 @@ def kdb(
             print(f"failed to create namespace {namespace}")
             exit(return_code)
 
+    # volumes
+    overrides = ""
+    if pvc is not None:
+        overrides_json = {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "spec": {
+                "containers": [
+                    {
+                        "name": pod_name,
+                        "image": image,
+                        "imagePullPolicy": "Always",
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            'sh -c "while true; do sleep 30;done;"',
+                        ],
+                        "volumeMounts": [
+                            {"mountPath": f"/opt/{v}", "name": v} for v in pvc
+                        ],
+                    }
+                ],
+                "tolerations": [
+                    {
+                        "key": "dedicated",
+                        "operator": "Equal",
+                        "value": "",
+                        "effect": "NoSchedule",
+                    },
+                    {
+                        "key": "dedicated",
+                        "operator": "Equal",
+                        "value": "",
+                        "effect": "NoExecute",
+                    },
+                ],
+                "nodeSelector": {"nodename": "monitoring"},
+                "volumes": [
+                    {"name": v, "persistentVolumeClaim": {"claimName": v}} for v in pvc
+                ],
+            },
+        }
+        overrides = f" --overrides='{dumps(overrides_json)}' --override-type=strategic "
+
     # create the pod
     return_code = call(
-        f'kubectl run {pod_name} --image={image} --restart=Never -n {namespace} --command -- /bin/sh -c -- "while true; do sleep 30; done;"',
+        f'kubectl run {pod_name} --image={image} --restart=Never{overrides} -n {namespace} --command -- /bin/sh -c -- "while true; do sleep 30; done;"',
         shell=True,
     )
     if return_code != 0:
