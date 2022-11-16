@@ -131,7 +131,7 @@ def kdb(
         shell=True,
     )
 
-    if port_forward_proc.poll() is None:
+    if port_forward is not None and port_forward_proc.poll() is None:
         print("terminating port forward")
         port_forward_proc.terminate()
 
