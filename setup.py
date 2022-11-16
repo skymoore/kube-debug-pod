@@ -1,18 +1,7 @@
 #!/usr/bin/env python3
 
-import os
-import sys
 from setuptools import find_packages, setup
 from kube_debug_pod import _version
-
-
-def read(*parts):
-    """Read file."""
-    filename = os.path.join(os.path.abspath(os.path.dirname(__file__)), *parts)
-    sys.stdout.write(filename)
-    with open(filename, encoding="utf-8", mode="rt") as fp:
-        return fp.read()
-
 
 with open("./README.md") as readme_file:
     readme = readme_file.read()
