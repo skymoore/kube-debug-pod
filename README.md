@@ -2,6 +2,10 @@
 
 ## CLI for easy kube debug pod
 
+## Install:
+```bash
+python -m pip install kube-debug-pod
+```
 ## Usage:
 ```bash
 Usage: kdb [OPTIONS]
@@ -14,4 +18,9 @@ Options:
   -v, --version         Display version info and exit.
   -a, --arch-linux      Use archlinux:latest image.
   --help                Show this message and exit.
+```
+
+## Example Usage:
+```bash
+kdb -n myapp
 ```
