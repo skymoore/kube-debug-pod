@@ -96,10 +96,6 @@ def kdb(
         shell=True,
     )
 
-    if return_code not in [1, 0]:
-        print(f"failed to attach to pod {pod_name} in {namespace} namespace")
-        exit(return_code)
-
     # delete pod
     return_code = call(f"kubectl delete pod {pod_name} -n {namespace}", shell=True)
     if return_code != 0:
