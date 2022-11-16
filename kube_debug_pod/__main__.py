@@ -57,7 +57,6 @@ def kdb(
 
     if version:
         print(f"kube-debug-pod {_version}")
-        print(image)
         exit(0)
 
     # set image
