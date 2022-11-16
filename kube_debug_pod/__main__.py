@@ -19,7 +19,7 @@ sky_tools_image = "skymoore/tools:latest"
     "--namespace",
     default=default_namespace,
     type=STRING,
-    help=f"Namespace to start pod in, default: {default_namespace}.",
+    help=f"Namespace to start pod in, created if does not exist, default: {default_namespace}.",
 )
 @option(
     "-c",
@@ -87,6 +87,20 @@ def kdb(
 
     print(f"image: {image}")
 
+    # namespace
+    namespace_created = False
+    print(f"checking for namespace {namespace}...")
+    return_code = call(
+        f"kubectl get ns {namespace}",
+        shell=True,
+    )
+
+    if return_code != 0:
+        return_code = call(
+            f"kubectl create ns {namespace}",
+            shell=True,
+        )
+        namespace_created = True
     # create the pod
     return_code = call(
         f'kubectl run {pod_name} --image={image} --restart=Never -n {namespace} --command -- /bin/sh -c -- "while true; do sleep 30; done;"',
@@ -135,10 +149,16 @@ def kdb(
         print("terminating port forward")
         port_forward_proc.terminate()
 
-    # delete pod
+    # cleanup
     return_code = call(f"kubectl delete pod {pod_name} -n {namespace}", shell=True)
     if return_code != 0:
         print(f"failed to delete pod {pod_name} in {namespace} namespace")
         exit(return_code)
+
+    if namespace_created:
+        return_code = call(f"kubectl delete ns {namespace}", shell=True)
+        if return_code != 0:
+            print(f"failed to delete namespace {namespace}")
+            exit(return_code)
 
     exit(0)
