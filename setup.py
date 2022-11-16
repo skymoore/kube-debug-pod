@@ -22,7 +22,7 @@ setup(
     description="CLI to easily create k8s debug pod.",
     include_package_data=True,
     install_requires=requirements,
-    keywords=["k8s", "debug"],
+    keywords=["k8s", "debug", "kubernetes", "debugging", "pod"],
     license="MIT",
     long_description_content_type="text/markdown",
     long_description=readme,
