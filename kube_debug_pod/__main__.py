@@ -1,7 +1,8 @@
 from click import STRING
 from cloup import command, option
-from subprocess import call, Popen, PIPE
 from cloup.constraints import mutually_exclusive
+from subprocess import call, Popen, PIPE
+from time import sleep
 from . import _version
 
 default_namespace = "default"
@@ -90,17 +91,32 @@ def kdb(
     # namespace
     namespace_created = False
     print(f"checking for namespace {namespace}...")
-    return_code = call(
-        f"kubectl get ns {namespace}",
-        shell=True,
+    ns_proc = Popen(
+        [
+            "kubectl",
+            "get",
+            "ns",
+            namespace,
+        ],
+        stdin=PIPE,
+        stderr=PIPE,
+        stdout=PIPE,
     )
 
-    if return_code != 0:
+    while ns_proc.poll() is None:
+        sleep(1)
+
+    if ns_proc.poll() != 0:
         return_code = call(
             f"kubectl create ns {namespace}",
             shell=True,
         )
         namespace_created = True
+
+        if return_code != 0:
+            print(f"failed to create namespace {namespace}")
+            exit(return_code)
+
     # create the pod
     return_code = call(
         f'kubectl run {pod_name} --image={image} --restart=Never -n {namespace} --command -- /bin/sh -c -- "while true; do sleep 30; done;"',
